@@ -1,4 +1,5 @@
 import io, os
+import json
 from google.cloud import speech
 from google.cloud.speech import enums
 from google.cloud.speech import types
@@ -7,12 +8,14 @@ from google.cloud import texttospeech
 from flask import jsonify, Flask, request, render_template, redirect
 from flask import Flask, flash, request, redirect, render_template, send_from_directory
 from werkzeug.utils import secure_filename
+from flask_cors import CORS
 
 client = speech.SpeechClient()
 
 filename = 'hin.wav'
 
 app = Flask(__name__)
+CORS(app)
 
 def get_transcript(filename, lang):
 	with io.open(filename, 'rb') as fi:
@@ -21,7 +24,7 @@ def get_transcript(filename, lang):
 
 	config = types.RecognitionConfig(
 		encoding = enums.RecognitionConfig.AudioEncoding.LINEAR16,
-	    sample_rate_hertz=8000,
+	    # sample_rate_hertz=8000,
 	    language_code=lang)
 
 	response = client.recognize(config, audio)
@@ -35,6 +38,7 @@ def get_transcript(filename, lang):
 
 @app.route('/translate', methods=['POST','GET'])
 def trans():
+		print('hello')
 	# if request.method == 'POST':
 	# 	print('here')
 
@@ -48,18 +52,27 @@ def trans():
 	# 	file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 	# 	flash('File successfully uploaded')
 	# 	return redirect('/')
-		file = request.files['file']
+		print(request.files)
+		print('*****')
+		# print(request.data)
+		# print('args')
+		# print(request.args)
+		print('form data')
+		print(request.form)
+		file = request.files['audio_data']
 		print('-----')
 		print(file)
 		print(type(file))
-		filename = secure_filename(file.filename)
+		# filename = secure_filename(file.filename)
+		filename = 'myaudio.wav'
 		print(filename)
 		file.save(os.path.join('uploads', filename))
 		print('saved')
 
 		# filename = request.args.get('filename')
-		lang = request.args.get('lang')
-		target = request.args.get('target')
+		# print(request.form)
+		lang = request.form.get('lang')
+		target = request.form.get('target')
 		print(lang, target)
 
 		text = get_transcript(os.path.join('uploads', filename), lang)
@@ -78,7 +91,8 @@ def trans():
 		# translated_audio = tts(translated_text, target)
 		# data['audio'] = translated_audio
 		print(data)
-		return jsonify(data)
+		# return jsonify(data)
+		return json.dumps(data),200,{'content-type':'application/json'}
 		# return redirect(request.url)
 
 def tts(text, lang, filename):
@@ -114,5 +128,5 @@ def send_js(path):
     return send_from_directory('audio', path)
 
 if __name__=='__main__':
-	app.run('localhost', debug=True)
+	app.run('0.0.0.0',8080)
 
